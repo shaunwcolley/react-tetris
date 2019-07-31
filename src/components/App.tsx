@@ -199,9 +199,9 @@ class App extends React.Component<TetrisProps, TetrisState> {
         }
       }
     }
-    if (rotateIsValid_ {
+    if (rotateIsValid) {
       rotate = newRotate
-    })
+    }
 
     let yAddIsValid = true
 
@@ -229,17 +229,17 @@ class App extends React.Component<TetrisProps, TetrisState> {
     field[y + tiles[tile][rotate][2][1]][x + tiles[tile][rotate][2][0]] = tile
     field[y + tiles[tile][rotate][3][1]][x + tiles[tile][rotate][3][0]] = tile
 
-    if(!yAddIsValid) {
-      for ( let row = this.props.boardHeight -1; row >= 0; row--) {
+    if (!yAddIsValid) {
+      for (let row = this.props.boardHeight -1; row >= 0; row--) {
         let isRowComplete = true
 
-        for(let col = 0; col < this.props.boardWidth; col++) {
+        for (let col = 0; col < this.props.boardWidth; col++) {
           if(field[row][col] === 0) {
             isRowComplete = false
           }
         }
-        if(isRowComplete) {
-          for (let yRowSrc = row: row > 0; row--) {
+        if (isRowComplete) {
+          for (let yRowSrc = row; row > 0; row--) {
             for (let col = 0; col < this.props.boardWidth; col++) {
               field[row][col] = field[row - 1][col]
             }
@@ -247,21 +247,106 @@ class App extends React.Component<TetrisProps, TetrisState> {
           row = this.props.boardHeight
         }
       }
-      this.setState(prev => ({
-        core: prev.score + 1 * prev.level,
-        tileCount: prev.tileCount + 1,
-        level: 1 + Math.floor(prev.tileCount / 10)
+
+      this.setState(prevState => ({
+        score: prevState.score + 1 * prevState.level,
+        tileCount: prevState.tileCount + 1,
+        level: 1 + Math.floor(prevState.tileCount / 10)
       }))
 
       let timerId
 
       clearInterval(this.state.timerId)
+
+      timerId = setInterval(() => this.handleBoardUpdate('down'), 1000 - (this.state.level * 10 > 600 ? 600 : this.state.level * 10))
+
+      this.setState({ timerId })
+
+      tile = Math.floor(Math.random() * 7 + 1)
+      x = parseInt(this.props.boardWidth) / 2
+      y = 1
+      rotate = 0
+
+      if (
+        field[y + tiles[tile][rotate][0][1]][x + tiles[tile][rotate][0][0]] !== 0 ||
+        field[y + tiles[tile][rotate][1][1]][x + tiles[tile][rotate][1][0]] !== 0 ||
+        field[y + tiles[tile][rotate][2][1]][x + tiles[tile][rotate][2][0]] !== 0 ||
+        field[y + tiles[tile][rotate][3][1]][x + tiles[tile][rotate][3][0]] !== 0
+      ) {
+        this.setState({ gameOver: true })
+      } else {
+        field[y + tiles[tile][rotate][0][1]][x + tiles[tile][rotate][0][0]] = tile
+        field[y + tiles[tile][rotate][1][1]][x + tiles[tile][rotate][1][0]] = tile
+        field[y + tiles[tile][rotate][2][1]][x + tiles[tile][rotate][2][0]] = tile
+        field[y + tiles[tile][rotate][3][1]][x + tiles[tile][rotate][3][0]] = tile
+      }
     }
 
+    this.setState({
+      field,
+      activeTileX: x,
+      activeTileY: y,
+      tileRotate: rotate,
+      activeTile: tile,
+    })
+  }
+
+  handlePauseClick = () => {
+    this.setState((prevState: any) => ({ isPaused: !prevState.isPaused }))
+  }
+
+  handleNewGameClick = () => {
+    let field: any[] = []
+
+    for (let y = 0; y < this.props.boardHeight; y++) {
+      let row = []
+
+      for (let x = 0; x < this.props.boardWidth; x ++) {
+        row.push(0)
+      }
+      field.push(row)
+    }
+
+    let xStart = Math.floor(parseInt(this.props.boardWidth) / 2)
+
+    this.setState({
+      activeTileX: xStart,
+      activeTileY: 1,
+      activeTile: 2,
+      tileRotate: 0,
+      score: 0,
+      level: 1,
+      tileCount: 0,
+      gameOver: false,
+      field
+    })
   }
 
   render(){
-    return <div>'howdy'</div>
+    return (
+      <div className="tetris">
+        <Board
+        field={this.state.field}
+        gameOver={this.state.gameOver}
+        score={this.state.score}
+        level={this.state.level}
+        rotate={this.state.tileRotate}
+        />
+        <div className='tetris__block-controls'>
+          <button className="btn" onClick={() => this.handleBoardUpdate('left')}>Left</button>
+
+          <button className="btn" onClick={() => this.handleBoardUpdate('down')}>Down</button>
+
+          <button className="btn" onClick={() => this.handleBoardUpdate('right')}>Right</button>
+
+          <button className="btn" onClick={() => this.handleBoardUpdate('rotate')}>Rotate</button>
+        </div>
+        <div className="tetris__game-controls">
+          <button className="btn" onClick={this.handleNewGameClick}>New Game</button>
+          <button className="btn" onClick={this.handlePauseClick}>{this.state.isPaused ? 'Resume' : 'Pause'}</button>
+        </div>
+      </div>
+    )
   }
 }
 
